@@ -4,9 +4,9 @@ from app.config import settings
 from app.routes import router
 
 app = FastAPI(
-    title=settings.API_TITLE,
-    version=settings.API_VERSION,
-    debug=settings.DEBUG,
+    title=settings.api_title,
+    version=settings.api_version,
+    debug=settings.debug,
 )
 
 

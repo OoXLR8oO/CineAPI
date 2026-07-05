@@ -11,7 +11,7 @@ class Movie(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
-    director: Mapped[str] = mapped_column(String(255), nullable=False)
+    director: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     release_year: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
     genre: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
 
