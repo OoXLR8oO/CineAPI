@@ -1,53 +1,34 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models import Movie
-from app.schemas import MovieCreate, MovieRead, MovieUpdate
+from app.schemas import MovieCreate, MovieFilters, MovieRead, MovieUpdate
+from app.services import movie_service
 
 router = APIRouter(prefix="/movies", tags=["movies"])
 
 
 @router.get("/health/db")
 async def db_health(db: AsyncSession = Depends(get_db)):
-    try:
-        await db.execute(select(1))
-        return {"status": "ok"}
-    except Exception as e:
-        return {"status": "error", "detail": str(e)}
+    await db.execute(select(1))
+    return {"status": "ok"}
+
+
+@router.get("/debug/error")
+async def force_error():
+    raise RuntimeError("test error")
 
 
 @router.get("", response_model=list[MovieRead])
 async def list_movies(
-    limit: Annotated[int, Query(ge=1, le=100)] = 50,
-    offset: Annotated[int, Query(ge=0)] = 0,
-    title: Annotated[str | None, Query(min_length=1, max_length=255)] = None,
-    director: Annotated[str | None, Query(min_length=1, max_length=255)] = None,
-    release_year: Annotated[int | None, Query(ge=1888, le=2100)] = None,
-    genre: Annotated[str | None, Query(min_length=1, max_length=100)] = None,
+    filters: Annotated[MovieFilters, Depends()],
     db: AsyncSession = Depends(get_db),
 ):
-    query = select(Movie)
-
-    if title:
-        query = query.where(Movie.title.ilike(f"%{title}%"))
-
-    if director:
-        query = query.where(Movie.director.ilike(f"%{director}%"))
-
-    if release_year:
-        query = query.where(Movie.release_year == release_year)
-
-    if genre:
-        query = query.where(Movie.genre.ilike(f"%{genre}%"))
-
-    query = query.order_by(Movie.id).limit(limit).offset(offset)
-
-    result = await db.execute(query)
-    return result.scalars().all()
+    return await movie_service.list_movies(db, filters)
 
 
 @router.get("/{movie_id}", response_model=MovieRead)
@@ -55,11 +36,7 @@ async def get_movie(
     movie_id: int,
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(Movie).where(Movie.id == movie_id))
-    movie = result.scalar_one_or_none()
-
-    if not movie:
-        raise HTTPException(status_code=404, detail="Movie not found")
+    movie = await movie_service.get_movie_or_404(db, movie_id)
 
     return movie
 
@@ -84,11 +61,7 @@ async def update_movie(
     payload: MovieUpdate,
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(Movie).where(Movie.id == movie_id))
-    movie = result.scalar_one_or_none()
-
-    if not movie:
-        raise HTTPException(status_code=404, detail="Movie not found")
+    movie = await movie_service.get_movie_or_404(db, movie_id)
 
     updates = payload.model_dump(exclude_unset=True)
 
@@ -106,11 +79,7 @@ async def delete_movie(
     movie_id: int,
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(Movie).where(Movie.id == movie_id))
-    movie = result.scalar_one_or_none()
-
-    if not movie:
-        raise HTTPException(status_code=404, detail="Movie not found")
+    movie = await movie_service.get_movie_or_404(db, movie_id)
 
     await db.delete(movie)
     await db.commit()
