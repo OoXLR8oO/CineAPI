@@ -5,7 +5,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models import Movie
 from app.schemas import MovieCreate, MovieFilters, MovieRead, MovieUpdate
 from app.services import movie_service
 
@@ -46,13 +45,7 @@ async def create_movie(
     payload: MovieCreate,
     db: AsyncSession = Depends(get_db),
 ):
-    movie = Movie(**payload.model_dump())
-    db.add(movie)
-
-    await db.commit()
-    await db.refresh(movie)
-
-    return movie
+    return await movie_service.create_movie(db, payload)
 
 
 @router.patch("/{movie_id}", response_model=MovieRead)
@@ -61,17 +54,7 @@ async def update_movie(
     payload: MovieUpdate,
     db: AsyncSession = Depends(get_db),
 ):
-    movie = await movie_service.get_movie_or_404(db, movie_id)
-
-    updates = payload.model_dump(exclude_unset=True)
-
-    for field, value in updates.items():
-        setattr(movie, field, value)
-
-    await db.commit()
-    await db.refresh(movie)
-
-    return movie
+    return await movie_service.update_movie(db, movie_id, payload)
 
 
 @router.delete("/{movie_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -79,7 +62,4 @@ async def delete_movie(
     movie_id: int,
     db: AsyncSession = Depends(get_db),
 ):
-    movie = await movie_service.get_movie_or_404(db, movie_id)
-
-    await db.delete(movie)
-    await db.commit()
+    await movie_service.delete_movie(db, movie_id)

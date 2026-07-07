@@ -2,7 +2,6 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class MovieBase(BaseModel):
-    id: int
     title: str = Field(min_length=1, max_length=255)
     director: str = Field(min_length=1, max_length=255)
     release_year: int = Field(ge=1888, le=2100)
@@ -14,6 +13,8 @@ class MovieCreate(MovieBase):
 
 
 class MovieRead(MovieBase):
+    id: int
+
     model_config = ConfigDict(
         from_attributes=True,
     )
