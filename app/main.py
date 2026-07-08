@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.config import settings
 from app.exceptions import (
+    integrity_error_exception_handler,
     sqlalchemy_exception_handler,
     validation_exception_handler,
 )
@@ -26,6 +27,11 @@ app.add_exception_handler(
 app.add_exception_handler(
     SQLAlchemyError,
     sqlalchemy_exception_handler,
+)
+
+app.add_exception_handler(
+    IntegrityError,
+    integrity_error_exception_handler,
 )
 
 
