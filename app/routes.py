@@ -5,7 +5,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.schemas import MovieCreate, MovieFilters, MovieRead, MovieUpdate
+from app.schemas import (
+    MovieCreate,
+    MovieFilters,
+    MovieListResponse,
+    MovieRead,
+    MovieUpdate,
+)
 from app.services import movie_service
 
 router = APIRouter(prefix="/movies", tags=["movies"])
@@ -22,7 +28,7 @@ async def force_error():
     raise RuntimeError("test error")
 
 
-@router.get("", response_model=list[MovieRead])
+@router.get("", response_model=MovieListResponse)
 async def list_movies(
     filters: Annotated[MovieFilters, Depends()],
     db: AsyncSession = Depends(get_db),
@@ -35,7 +41,7 @@ async def get_movie(
     movie_id: int,
     db: AsyncSession = Depends(get_db),
 ):
-    movie = await movie_service.get_movie_or_404(db, movie_id)
+    movie = await movie_service.get_movie_by_id(db, movie_id)
 
     return movie
 

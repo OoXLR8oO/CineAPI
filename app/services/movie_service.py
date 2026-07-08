@@ -6,15 +6,15 @@ from app.repositories import movie_repository
 from app.schemas import MovieCreate, MovieFilters, MovieUpdate
 
 
-async def list_movies(db: AsyncSession, filters: MovieFilters) -> list[Movie]:
+async def list_movies(db: AsyncSession, filters: MovieFilters) -> dict:
     return await movie_repository.list_movies(db, filters)
 
 
-async def get_movie_or_404(
+async def get_movie_by_id(
     db: AsyncSession,
     movie_id: int,
 ) -> Movie:
-    movie = await movie_repository.get_movie(db, movie_id)
+    movie = await movie_repository.get_movie_by_id(db, movie_id)
 
     if movie is None:
         raise HTTPException(
@@ -34,13 +34,7 @@ async def update_movie(
     movie_id: int,
     payload: MovieUpdate,
 ) -> Movie:
-    movie = await movie_repository.get_movie(db, movie_id)
-
-    if movie is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Movie not found",
-        )
+    movie = await get_movie_by_id(db, movie_id)
 
     return await movie_repository.update_movie(db, movie, payload)
 
@@ -49,6 +43,6 @@ async def delete_movie(
     db: AsyncSession,
     movie_id: int,
 ) -> None:
-    movie = await get_movie_or_404(db, movie_id)
+    movie = await get_movie_by_id(db, movie_id)
 
     await movie_repository.delete_movie(db, movie)

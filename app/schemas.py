@@ -20,6 +20,13 @@ class MovieRead(MovieBase):
     )
 
 
+class MovieListResponse(BaseModel):
+    items: list[MovieRead]
+    total: int
+    limit: int
+    offset: int
+
+
 class MovieUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=255)
     director: str | None = Field(default=None, min_length=1, max_length=255)

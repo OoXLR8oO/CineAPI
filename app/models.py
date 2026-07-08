@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Integer, String, func
+from sqlalchemy import DateTime, Integer, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -8,6 +8,15 @@ from app.database import Base
 
 class Movie(Base):
     __tablename__ = "movies"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "title",
+            "director",
+            "release_year",
+            name="uq_movie_details",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False, index=True)

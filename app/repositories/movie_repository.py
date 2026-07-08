@@ -1,11 +1,14 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Movie
 from app.schemas import MovieCreate, MovieFilters, MovieUpdate
 
 
-async def list_movies(db: AsyncSession, filters: MovieFilters) -> list[Movie]:
+async def list_movies(
+    db: AsyncSession,
+    filters: MovieFilters,
+) -> dict:
     conditions = []
 
     if filters.title:
@@ -20,20 +23,26 @@ async def list_movies(db: AsyncSession, filters: MovieFilters) -> list[Movie]:
     if filters.genre:
         conditions.append(Movie.genre.ilike(f"%{filters.genre}%"))
 
-    query = (
-        select(Movie)
-        .where(*conditions)
-        .order_by(Movie.id)
-        .limit(filters.limit)
-        .offset(filters.offset)
+    base_query = select(Movie).where(*conditions)
+
+    movies_query = (
+        base_query.order_by(Movie.id).limit(filters.limit).offset(filters.offset)
     )
 
-    result = await db.execute(query)
+    count_query = select(func.count()).select_from(base_query.subquery())
 
-    return result.scalars().all()
+    movies_result = await db.execute(movies_query)
+    count_result = await db.execute(count_query)
+
+    return {
+        "items": movies_result.scalars().all(),
+        "total": count_result.scalar_one(),
+        "limit": filters.limit,
+        "offset": filters.offset,
+    }
 
 
-async def get_movie(db: AsyncSession, movie_id: int) -> Movie | None:
+async def get_movie_by_id(db: AsyncSession, movie_id: int) -> Movie | None:
     result = await db.execute(select(Movie).where(Movie.id == movie_id))
 
     return result.scalar_one_or_none()
