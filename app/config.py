@@ -1,3 +1,4 @@
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -8,6 +9,8 @@ class Settings(BaseSettings):
 
     api_title: str = "Movies API"
     api_version: str = "0.1.0"
+
+    api_key: SecretStr
 
     debug: bool = False
 

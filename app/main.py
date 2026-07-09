@@ -8,7 +8,7 @@ from app.exceptions import (
     sqlalchemy_exception_handler,
     validation_exception_handler,
 )
-from app.routes import router
+from app.routes import admin_router, public_router
 
 app = FastAPI(
     title=settings.api_title,
@@ -17,7 +17,8 @@ app = FastAPI(
 )
 
 
-app.include_router(router)
+app.include_router(admin_router)
+app.include_router(public_router)
 
 app.add_exception_handler(
     RequestValidationError,

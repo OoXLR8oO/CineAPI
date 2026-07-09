@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.dependencies.auth import verify_admin_key
 from app.schemas import (
     MovieCreate,
     MovieFilters,
@@ -14,21 +15,30 @@ from app.schemas import (
 )
 from app.services import movie_service
 
-router = APIRouter(prefix="/movies", tags=["movies"])
+public_router = APIRouter(
+    prefix="/movies",
+    tags=["movies", "public"],
+)
+
+admin_router = APIRouter(
+    prefix="/movies",
+    tags=["movies", "admin"],
+    dependencies=[Depends(verify_admin_key)],
+)
 
 
-@router.get("/health/db")
+@admin_router.get("/health/db")
 async def db_health(db: AsyncSession = Depends(get_db)):
     await db.execute(select(1))
     return {"status": "ok"}
 
 
-@router.get("/debug/error")
+@admin_router.get("/debug/error")
 async def force_error():
     raise RuntimeError("test error")
 
 
-@router.get("", response_model=MovieListResponse)
+@public_router.get("", response_model=MovieListResponse)
 async def list_movies(
     filters: Annotated[MovieFilters, Depends()],
     db: AsyncSession = Depends(get_db),
@@ -36,7 +46,7 @@ async def list_movies(
     return await movie_service.list_movies(db, filters)
 
 
-@router.get("/{movie_id}", response_model=MovieRead)
+@public_router.get("/{movie_id}", response_model=MovieRead)
 async def get_movie(
     movie_id: int,
     db: AsyncSession = Depends(get_db),
@@ -46,15 +56,16 @@ async def get_movie(
     return movie
 
 
-@router.post("", response_model=MovieRead, status_code=status.HTTP_201_CREATED)
+@admin_router.post("", response_model=MovieRead, status_code=status.HTTP_201_CREATED)
 async def create_movie(
     payload: MovieCreate,
     db: AsyncSession = Depends(get_db),
+    dependencies=Depends(verify_admin_key),
 ):
     return await movie_service.create_movie(db, payload)
 
 
-@router.patch("/{movie_id}", response_model=MovieRead)
+@admin_router.patch("/{movie_id}", response_model=MovieRead)
 async def update_movie(
     movie_id: int,
     payload: MovieUpdate,
@@ -63,7 +74,7 @@ async def update_movie(
     return await movie_service.update_movie(db, movie_id, payload)
 
 
-@router.delete("/{movie_id}", status_code=status.HTTP_204_NO_CONTENT)
+@admin_router.delete("/{movie_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_movie(
     movie_id: int,
     db: AsyncSession = Depends(get_db),
