@@ -1,9 +1,13 @@
+from logging import getLogger
+
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Movie
 from app.repositories import movie_repository
 from app.schemas import MovieCreate, MovieFilters, MovieUpdate
+
+logger = getLogger(__name__)
 
 
 async def list_movies(db: AsyncSession, filters: MovieFilters) -> dict:
@@ -26,7 +30,15 @@ async def get_movie_by_id(
 
 
 async def create_movie(db: AsyncSession, payload: MovieCreate) -> Movie:
-    return await movie_repository.create_movie(db, payload)
+    movie = await movie_repository.create_movie(db, payload)
+
+    logger.info(
+        "Created movie: id=%s title='%s'",
+        movie.id,
+        movie.title,
+    )
+
+    return movie
 
 
 async def update_movie(
@@ -36,6 +48,12 @@ async def update_movie(
 ) -> Movie:
     movie = await get_movie_by_id(db, movie_id)
 
+    logger.info(
+        "Updated movie: id=%s title='%s'",
+        movie.id,
+        movie.title,
+    )
+
     return await movie_repository.update_movie(db, movie, payload)
 
 
@@ -44,5 +62,11 @@ async def delete_movie(
     movie_id: int,
 ) -> None:
     movie = await get_movie_by_id(db, movie_id)
+
+    logger.info(
+        "Deleted movie: id=%s title='%s'",
+        movie.id,
+        movie.title,
+    )
 
     await movie_repository.delete_movie(db, movie)

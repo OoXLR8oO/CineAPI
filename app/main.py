@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+import app.logging_config  # noqa: F811
 from app.config import settings
 from app.exceptions import (
     integrity_error_exception_handler,
